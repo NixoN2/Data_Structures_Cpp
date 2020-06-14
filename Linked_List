@@ -1,0 +1,245 @@
+
+
+template <typename T>
+class List
+{
+private:
+	struct Node
+	{
+		T val;
+		Node* next;
+		Node(const T& value) : val(value), next(nullptr) {}
+	};
+	Node* _first;
+	Node* _last;
+	size_t _size;
+	void copy(const List& list)
+	{
+		clear();
+		Node* curr = list._first;
+		while (curr)
+		{
+			push_back(curr->val);
+			curr = curr->next;
+		}
+	}
+public:
+	List() : _first(nullptr), _last(nullptr), _size(0) {}
+	List(const List& list) : List()
+	{
+		copy(list);
+	}
+	void clear()
+	{
+
+		if (_size == 0)
+		{
+			_first = _last = nullptr;
+		}
+		else
+		{
+			Node* curr;
+			while (_first)
+			{
+				curr = _first;
+				_first = _first->next;
+				delete curr;
+			}
+			_last = nullptr;
+			_size = 0;
+		}
+	}
+	void empty() { clear(); }
+	~List()
+	{
+		clear();
+	}
+	T& operator[](size_t idx)
+	{
+		if (idx >= _size) throw "out of range";
+		Node* curr = _first;
+		for (size_t i = 0; i < idx; ++i)
+		{
+			curr = curr->next;
+		}
+		return curr->val;
+	}
+	size_t size() const
+	{
+		return _size;
+	}
+	void push_back(const T& value)
+	{
+		if (_size == 0)
+		{
+			_first = _last = new Node(value);
+		}
+		else
+		{
+			_last->next = new Node(value);
+			_last = _last->next;
+		}
+		++_size;
+	}
+	List& operator=(const List& list)
+	{
+		if (this != &list)
+		{
+			clear();
+			Node* curr = list._first;
+			while (curr)
+			{
+				push_back(curr->val);
+				curr = curr->next;
+			}
+		}
+		return *this;
+	}
+	class iterator
+	{
+	private:
+		Node* _curr;
+	public:
+		iterator(Node* curr = nullptr) : _curr(curr) {}
+		T& operator*() const { return _curr->val; }
+		T& operator*() { return _curr->val; }
+		bool operator==(iterator it) const { return _curr == it._curr; }
+		bool operator!=(iterator it) const { return !(*this == it); }
+		iterator& operator++()
+		{
+			if (!_curr) throw "iterator out of bounds";
+			_curr = _curr->next;
+			return *this;
+		}
+		iterator operator++(int)
+		{
+			Node* curr = _curr;
+			if (!_curr) throw "iterator out of bounds";
+			_curr = _curr->next;
+			return iterator(curr);
+		}
+		iterator operator+(int n)
+		{
+			for (int i = 0; i < n; ++i)
+			{
+				_curr = _curr->next;
+			}
+			return iterator(_curr);
+		}
+		friend class List<T>;
+	};
+	iterator begin() const { return iterator(_first); }
+	iterator end() const { return iterator(); }
+	iterator find(const T& value) const
+	{
+		Node* curr = _first;
+		while (curr)
+		{
+			if (curr->val == value)
+			{
+				return iterator(curr);
+			}
+			curr = curr->next;
+		}
+		return iterator();
+	}
+	iterator insert(iterator it, const T& val)
+	{
+		if (_size == 0)
+		{
+			push_bacK(val);
+		}
+		Node* new_node = new Node(val);
+		Node* curr = _first;
+
+		if (it == begin())
+		{
+			new_node->next = _first;
+			_first = new_node;
+			return begin();
+		}
+		if (it == iterator(_last))
+		{
+			_last->next = new_node;
+			_last = new_node;
+			return iterator(_last);
+		}
+		while (curr->next != it._curr)
+		{
+			curr = curr->next;
+		}
+		new_node->next = curr->next;
+		curr->next = new_node;
+		return iterator(new_node);
+	}
+	iterator erase(iterator it) 
+	{
+		if (_size == 0)
+		{
+			return iterator();
+		}
+		Node* curr = _first;
+		Node* node = _first;
+		if (it == begin())
+		{
+			_first = _first->next;
+			delete curr;
+			return begin();
+		}
+		else if (it == end())
+		{
+			while (curr->next != _last)
+			{
+				curr = curr->next;
+			}
+			curr->next = nullptr;
+			_last = nullptr;
+			return iterator(curr);
+		}
+		else
+		{
+			while (node->next != it._curr)
+				node = node->next;
+			while (curr != it._curr)
+				curr = curr->next;
+			node->next = curr->next;
+			curr->next = nullptr;
+			delete curr;
+			return iterator(node);
+		}
+
+	}
+	
+	iterator erase(iterator beg, iterator end)
+	{
+		Node* curr = _first;
+		
+		if (beg == begin())
+		{
+			while (curr->next != end._curr->next)
+			{
+				curr = curr->next;
+			}
+			curr = curr->next;
+			_first = curr;
+			curr = nullptr;
+			delete curr;
+			return iterator(_first);
+		}
+		else
+		{
+			Node* node = _first;
+			while (curr->next != beg._curr)
+			{
+				curr = curr->next;
+			}
+			while (node != end._curr)
+			{
+				node = node->next;
+			}
+			curr->next = node->next;
+			return iterator(curr);
+		}
+	}
+};
+
