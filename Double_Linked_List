@@ -1,0 +1,274 @@
+
+template<typename T>
+class DLL 
+{
+private:
+	struct Node
+	{
+		T data;
+		Node* next;
+		Node* prev;
+		Node(const T& dat) : data(dat), next(nullptr), prev(nullptr) {}
+	};
+	Node* _first;
+	Node* _last;
+	size_t _size;
+	void copy(const DLL& list)
+	{
+		clear();
+		Node* curr = list._first;
+		while (curr)
+		{
+			push_back(curr->data);
+			curr = curr->next;
+		}
+	}
+public:
+	DLL() : _first(nullptr), _last(nullptr), _size(0) {}
+	DLL(const DLL& list) : _size(list._size)
+	{
+		copy(list);
+	}
+	~DLL()
+	{
+		clear();
+	}
+	DLL& operator=(const DLL& list)
+	{
+		copy();
+	}
+	T& operator[](size_t idx) const
+	{
+		if (idx >= _size) throw "out of range";
+		Node* curr = _first;
+		for (int i = 0; i < idx; ++i)
+		{
+			curr = curr->next;
+		}
+		return curr->data;
+	}
+	void clear()
+	{
+		if (_size == 0)
+		{
+			_first = _last = nullptr;
+		}
+		{
+			Node* curr;
+			while (_first)
+			{
+				curr = _first;
+				_first = _first->next;
+				delete curr;
+			}
+			_last = nullptr;
+			_size = 0;
+		}
+	}
+	void push_back(const T& val)
+	{
+		if (_size == 0)
+		{
+			_first = _last = new Node(val);
+		}
+		else
+		{
+			Node* new_node = new Node(val);
+			new_node->prev = _last;
+			_last->next = new_node;
+			_last = _last->next;
+		}
+		++_size;
+	}
+	size_t size() const
+	{
+		return _size;
+	}
+	size_t capacity() const
+	{
+		return -1;
+	}
+	void empty()
+	{
+		clear();
+	}
+	class iterator
+	{
+	private:
+		Node* _node;
+	public:
+		iterator(Node* node = nullptr) : _node(node) {}
+		T& operator*() const { return _node->data; }
+		T& operator*() { return _node->data; }
+		bool operator==(const iterator& it) const { return _node == it._node; }
+		bool operator!=(const iterator& it) const { return !(*this == it); }
+		iterator& operator++()
+		{
+			if (!_node) throw "iterator out of bounds";
+			_node = _node->next;
+			return *this;
+		}
+		iterator operator++(int)
+		{
+			Node* curr = _node;
+			if (!_node) throw "iterator out of bounds";
+			_node = _node->next;
+			return iterator(curr);
+		}
+		iterator operator+(int n)
+		{
+			for (int i = 0; i < n; ++i)
+			{
+				_node = _node->next;
+			}
+			return iterator(_node);
+		}
+		friend  DLL;
+	};
+	class reverse_iterator
+	{
+	private:
+		Node* _node;
+	public:
+		reverse_iterator(Node* node = nullptr) : _node(node) {}
+		T& operator*() const { return _node->data; }
+		T& operator*() { return _node->data; }
+		bool operator==(const reverse_iterator& it) const { return _node == it._node; }
+		bool operator!=(const reverse_iterator& it) const { return !(*this == it); }
+		reverse_iterator& operator++()
+		{
+			if (!_node) throw "reverse_iterator out of bounds";
+			_node = _node->prev;
+			return *this;
+		}
+		reverse_iterator operator++(int)
+		{
+			if (!_node) throw "reverse_iterator out of bounds";
+			Node* node = _node;
+			_node = _node->prev;
+			return reverse_iterator(node);
+		}
+		reverse_iterator operator+(int n)
+		{
+			for (int i = 0; i < n; ++i)
+			{
+				_node = _node->prev;
+			}
+			return reverse_iterator(_node);
+		}
+	};
+	iterator begin() const { return iterator(_first); }
+	iterator end() const { return iterator(); }
+	reverse_iterator rbegin() const { return reverse_iterator(_last); }
+	reverse_iterator rend() const { return reverse_iterator(); }
+	iterator find(const T& val)
+	{
+		Node* curr = _first;
+		while (curr)
+		{
+			if (curr->data == val)
+			{
+				return iterator(curr);
+			}
+			curr = curr->next;
+		}
+		return end();
+	}
+	iterator insert(iterator it, const T& val)
+	{
+		
+		if (_size == 0)
+		{
+			push_back(val);
+			return iterator(_first);
+		}
+		Node* new_node = new Node(val);
+		
+		if (it == begin())
+		{
+			new_node->next = _first;
+			_first->prev = new_node;
+			_first = new_node;
+			return iterator(_first);
+		}
+		if (it == end())
+		{
+			new_node->prev = _last;
+			_last->next = new_node;
+			_last = new_node;
+			return iterator(_last);
+		}
+		new_node->prev = it._node->prev;
+		it._node->prev->next = new_node;
+		new_node->next = it._node;
+		it._node->prev = new_node;
+		return iterator(new_node);
+	}
+	iterator erase(iterator it)
+	{
+		if (_size == 0)
+		{
+			_first = _last = nullptr;
+			return iterator();
+		}
+		if (it == begin())
+		{
+			Node* curr = _first;
+			_first = _first->next;
+			_first->prev = nullptr;
+			delete curr;
+			return iterator(_first);
+		}
+		else if (it == iterator(_last))
+		{
+			Node* curr = it._node;
+			_last = _last->prev;
+			_last->next = nullptr;
+			delete curr;
+			return end();
+		}
+		else {
+			Node* prev = it._node->prev;
+			Node* next = it._node->next;
+			Node* curr = it._node;
+			next->prev = curr->prev;
+			prev->next = curr->next;
+			curr->next = nullptr;
+			curr->prev = nullptr;
+			delete curr;
+			return iterator(next);
+		}
+	}
+	iterator erase(iterator beg, iterator _end) // {1,2,3,4} -> {1} beg = 2, end = 4
+	{
+		if (_size == 0)
+		{
+			_first = _last = nullptr;
+			return iterator();
+		}
+		if (beg == begin())
+		{
+			_first = _end._node->next;
+			return iterator(_first);
+		}
+		else if (_end == iterator(_last))
+		{
+			Node* prev = beg._node->prev;
+			_last = prev;
+			if (_last->prev != nullptr)
+			{
+				_last->prev->next = _last;
+			}
+			_last->next = nullptr;
+			return iterator(_last);
+		}
+		else
+		{
+			Node* prev = beg._node->prev;
+			Node* next = _end._node->next;
+			prev->next = next;
+			next->prev = prev;
+			return iterator(prev);
+		}
+	}
+};
