@@ -212,33 +212,36 @@ public:
 	
 	iterator erase(iterator beg, iterator end)
 	{
-		Node* curr = _first;
-		
 		if (beg == begin())
 		{
-			while (curr->next != end._curr->next)
+			Node* curr;
+			Node* _end = end._curr->next;
+			while (_first != _end)
 			{
-				curr = curr->next;
+				curr = _first;
+				_first = _first->next;
+				delete curr;
 			}
-			curr = curr->next;
-			_first = curr;
-			curr = nullptr;
-			delete curr;
-			return iterator(_first);
+			return begin();
 		}
 		else
 		{
 			Node* node = _first;
-			while (curr->next != beg._curr)
-			{
-				curr = curr->next;
-			}
-			while (node != end._curr)
-			{
+			Node* it_beg_node = beg._curr;
+			Node* it_end_node = end._curr;
+			Node* toConnect = it_end_node->next;
+			Node* toDelete = it_beg_node;
+			Node* toIterate = it_beg_node;
+			while (node->next != it_beg_node)
 				node = node->next;
+			while (toIterate != it_end_node)
+			{
+				toDelete = toIterate;
+				toIterate = toIterate->next;
+				delete toDelete;
 			}
-			curr->next = node->next;
-			return iterator(curr);
+			node->next = toConnect;
+			return iterator(node);
 		}
 	}
 };
