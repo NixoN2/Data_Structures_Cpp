@@ -1,0 +1,298 @@
+#include <initializer_list>
+template <class T>
+class Vector
+{
+private:
+	std::size_t _size;
+	std::size_t _capacity;
+	T* _data;
+public:
+	Vector(const std::size_t capacity) : _size(0),_capacity(capacity), _data(nullptr)
+	{
+		_data = new T[capacity];
+	}
+	Vector(const Vector& vec) : _size(vec._size), _capacity(vec._capacity), _data(new T[vec._capacity])
+	{
+		for (int i = 0; i < vec._size; ++i)
+		{
+			_data[i] = vec._data[i];
+		}
+	}
+	Vector(std::initializer_list<T> list) : _size(list.size()), _capacity(list.size()), _data(new T[list.size()])
+	{
+		int idx = 0;
+		for (auto it = list.begin(); it != list.end(); ++it)
+		{
+			_data[idx++] = *it;
+		}
+	}
+	~Vector()
+	{
+		clear();
+	}
+	std::size_t size() const
+	{
+		return _size;
+	}
+	std::size_t capacity() const
+	{
+		return _capacity;
+	}
+	void clear()
+	{
+		if (_data) delete[] _data;
+		_data = nullptr;
+		_size = 0;
+		_capacity = 0;
+	}
+	void empty()
+	{
+		_size = 0;
+	}
+	Vector& operator=(const Vector& vec)
+	{
+		if (this != &vec)
+		{
+			_size = vec._size;
+			_capacity = vec._capacity;
+			if (_data) delete[] _data;
+			_data = new T[vec._capacity];
+			for (int i = 0; i < vec._size; ++i)
+			{
+				_data[i] = vec._data[i];
+			}
+		}
+		return *this;
+	}
+	T& operator[](int idx) const
+	{
+		if (idx >= _size || idx < 0) throw "out of bounds";
+		return _data[idx];
+	}
+	Vector& resize(int size)
+	{
+		_capacity = size;
+		_size = (_capacity < _size) ? _capacity : _size;
+		T* tmp = new T[size];
+		for (int i = 0; i < size; ++i)
+		{
+			tmp[i] = std::move(_data[i]);
+		}
+		if (!_data) delete[] _data;
+		_data = tmp;
+		return *this;
+	}
+	Vector& push_back(const T& val)
+	{
+		if (_size == _capacity)
+		{
+			if (_capacity < 10)
+			{
+				resize(_capacity + 10);
+			}
+			else
+			{
+				resize(_capacity * 1.5);
+			}
+		}
+		_data[_size++] = val;
+		return *this;
+	}
+	class iterator
+	{
+	private:
+		T* _element;
+	public:
+		iterator(T* element = nullptr) : _element(element) {}
+		T& operator*() const { return *_element; }
+		T& operator*() { return *_element; }
+		bool operator==(const iterator& it) const { return _element == it._element; }
+		bool operator!=(const iterator& it) const { return !(*this == it); }
+		iterator& operator++()
+		{
+			if (!_element) throw "iterator out of bounds";
+			++_element;
+			return *this;
+		}
+		iterator operator++(int)
+		{
+			T* elem = _element;
+			if (!_element) throw "iterator out of bounds";
+			++_element;
+			return iterator(elem);
+		}
+		iterator operator+(int n)
+		{
+			return iterator(_element + n);
+		}
+		iterator operator-(int n)
+		{
+			return iterator(_element - n);
+		}
+		iterator& operator--()
+		{
+			--_element;
+			return *this;
+		}
+		iterator operator--(int)
+		{
+			T* tmp = _element;
+			--_element;
+			return iterator(tmp);
+		}
+	};
+	iterator begin() const { return iterator(_data); }
+	iterator end() const { return iterator(_data + _size ); }
+	iterator find(const T& val)
+	{
+		for (auto it = begin(); it != end(); ++it)
+		{
+			if ((*it) == val)
+			{
+				return it;
+			}
+		}
+		return end();
+	}
+	iterator insert(const T& val, iterator it)
+	{
+		if (it == begin())
+		{
+			if (_capacity == _size)
+			{
+				++_size;
+				++_capacity;
+			}
+			T* tmp =new T[_size];
+			tmp[0] = val;
+			for (int i = 0; i < _size; ++i)
+			{
+				tmp[i+1] = _data[i];
+			}
+			if (!_data) delete[] _data;
+			_data = tmp;
+			return begin();
+		}
+		else if (it == end())
+		{
+			push_back(val);
+			return end();
+		}
+		else
+		{
+			if (_capacity == _size)
+			{
+				++_size;
+				++_capacity;
+			}
+			else
+			{
+				++_size;
+			}
+			T* tmp = new T[_size];
+			int idx = 0;
+			for (auto iter = begin(); iter != it; ++iter)
+			{
+				tmp[idx++] = *iter;
+			}
+			tmp[idx++] = val;
+			for (; idx < _size;)
+			{
+				tmp[idx++] = _data[idx - 1];
+			}
+			if (!_data) delete[] _data;
+			_data = tmp;
+			return it;
+		}
+	}
+	iterator erase(iterator it)
+	{
+		if (it == begin())
+		{
+			T* tmp = new T[_size - 1];
+			for (int i = 1; i < _size; ++i)
+			{
+				tmp[i-1] = _data[i];
+			}
+			if (!_data) delete[] _data;
+			--_size;
+			_data = tmp;
+			return begin();
+		}
+		else if (it == end())
+		{
+			T* tmp = new T[_size - 1];
+			for (int i = 0; i < _size - 1; ++i)
+			{
+				tmp[i] = _data[i];
+			}
+			if (!_data) delete[] _data;
+			_data = tmp;
+			--_size;
+			return end();
+		}
+		else
+		{
+			T* tmp = new T[_size-1];
+			int idx = 0;
+			for (auto iter = begin(); iter != it; ++iter)
+			{
+				tmp[idx++] = *iter;
+			}
+			for (; idx < _size-1; ++idx)
+			{
+				tmp[idx] = _data[idx+1];
+			}
+			--_size;
+			if (!_data) delete[] _data;
+			_data = tmp;
+			return it;
+		}
+	}
+	void erase(iterator it_beg, iterator it_end) // {1,3,5,7} erase(beg+1, beg+2) -> {1,7} -> _size = _size -2;
+	{
+		int diff = 0;
+		for (auto it = it_beg; it != it_end+1; ++it)
+		{
+			++diff;
+		}
+		if (it_beg == begin())
+		{
+			T* tmp = new T[_size - diff+1];
+			int idx = 0;
+			for (auto it = begin(); it != (it_end + 1); ++it)
+			{
+				++idx;
+			}
+			for (int i  =0; idx < _size; ++idx, ++i)
+			{
+				tmp[i] = _data[idx];
+			}
+			_size -= diff;
+			if (!_data) delete[] _data;
+			_data = tmp;
+		}
+		else
+		{
+			T* tmp = new T[_size - diff];
+			int idx = 0;
+			for (auto it = begin(); it != it_beg; ++it)
+			{
+				tmp[idx++] = _data[idx];
+			}
+			int i = idx;
+			for (auto it = it_beg; it != it_end + 1; ++it)
+			{
+				++idx;
+			}
+	
+			for (; idx < _size;++idx,++i)
+			{
+				tmp[i] = _data[idx];
+			}
+			_size -= diff;
+			if (!_data) delete[] _data;
+			_data = tmp;
+		}
+	}
+};
