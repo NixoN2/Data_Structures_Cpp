@@ -1,0 +1,327 @@
+
+#include <vector>
+template <class T>
+class BinaryTree
+{
+	struct Node
+	{
+		Node* left;
+		Node* right;
+		Node* parent;
+		T data;
+		Node(const T& dat) : left(nullptr), right(nullptr), parent(nullptr), data(dat) {}
+		~Node()
+		{
+			if (left) delete left;
+			if (right) delete right;
+			left = right = nullptr;
+		}
+		Node* minimum()
+		{
+			Node* curr = this;
+			while (curr->left != nullptr)
+			{
+				curr = curr->left;
+			}
+			return curr;
+		}
+		Node* maximum()
+		{
+			Node* curr = this;
+			while (curr->right != nullptr)
+			{
+				curr = curr->right;
+			}
+			return curr;
+		}
+		Node* next()
+		{
+			if (right != nullptr) return right->minimum();
+			Node* curr = this;
+			Node* pCurr = parent;
+			while (pCurr != nullptr)
+			{
+				if (curr == pCurr->left) break;
+				curr = pCurr;
+				pCurr = pCurr->parent;
+			}
+			return pCurr;
+		}
+		Node* prev()
+		{
+			if (left != nullptr) return left->maximum();
+			Node* curr = this;
+			Node* pCurr = parent;
+			while (pCurr != nullptr)
+			{
+				if (curr == pCurr->right) break;
+				curr = pCurr;
+				pCurr = pCurr->parent;
+			}
+			return pCurr;
+		}
+		std::size_t height() const
+		{
+			std::size_t right_h = (right == nullptr) ? 0 : right->height();
+			std::size_t left_h = (left == nullptr) ? 0 : left->height();
+			return (right_h < left_h) ? left_h + 1 : right_h + 1;
+		}
+	};
+	Node* _root;
+	std::size_t _size;
+public:
+	BinaryTree() : _root(nullptr), _size(0) {}
+	void clear()
+	{
+		if (_root != nullptr) delete _root;
+		_root = nullptr;
+		_size = 0;
+	}
+	~BinaryTree()
+	{
+		clear();
+	}
+	std::size_t height() const
+	{
+		return _root->height();
+	}
+	std::size_t size() const
+	{
+		return _size;
+	}
+	std::size_t capacity() const
+	{
+		return -1;
+	}
+	void empty()
+	{
+		clear();
+	}
+	void push_back(const T& val)
+	{
+		++_size;
+		if (!_root)
+		{
+			_root = new Node(val);
+			return;
+		}
+		else
+		{
+			Node* curr = _root;
+			Node* pCurr;
+			do
+			{
+				pCurr = curr;
+				curr = val < curr->data ? curr->left : curr->right;
+			} while (curr);
+			curr = new Node(val);
+			curr->parent = pCurr;
+			(val < pCurr->data) ? (pCurr->left = curr) : (pCurr->right = curr);
+		}
+	}
+	class iterator
+	{
+	private:
+		Node* _curr;
+	public:
+		iterator(Node* curr =nullptr) : _curr(curr) {}
+		T& operator*() const { return _curr->data; }
+		T& operator*() { return _curr->data; }
+		bool operator==(const iterator& it) const { return _curr == it._curr; }
+		bool operator!=(const iterator& it) const { return !(*this == it); }
+		iterator& operator++()
+		{
+			if (_curr == nullptr) throw "iterator out of bounds";
+			_curr = _curr->next();
+			return *this;
+		}
+		iterator operator++(int)
+		{
+			Node* curr = _curr;
+			if (_curr == nullptr) throw "iterator out of bounds";
+			_curr = _curr->next();
+			return iterator(curr);
+		}
+		iterator operator+(int n)
+		{
+			for (int i = 0; i < n; ++i)
+				_curr = _curr->next();
+			return iterator(_curr);
+		}
+		iterator& operator--()
+		{
+			if (_curr == nullptr) throw "iterator out of bounds";
+			_curr = _curr->prev();
+			return *this;
+		}
+		iterator operator--(int)
+		{
+			Node* curr = _curr;
+			if (_curr == nullptr) throw "iterator out of bounds";
+			_curr = _curr->prev();
+			return iterator(curr);
+		}
+		iterator operator-(int n)
+		{
+			for (int i = 0; i < n; ++i)
+			{
+				_curr = _curr->prev();
+			}
+			return iterator(_curr);
+		}
+		friend class BinaryTree;
+  	};
+	iterator begin() const { return iterator(_root->minimum()); }
+	iterator end() const { return iterator(nullptr); }
+	iterator find(const T& val)
+	{
+		for (auto it = begin(); it != end(); ++it)
+		{
+			if ((*it) == val)
+			{
+				return it;
+			}
+		}
+		return end();
+	}
+	iterator insert(const T& val, iterator it)
+	{
+		if (_root == nullptr)
+		{
+			push_back(val);
+		}
+		Node* curr = _root->minimum();
+		Node* new_node = new Node(val);
+		if (val < curr->data)
+		{
+			curr->left = new_node;
+			new_node->parent = curr;
+			++_size;
+			return iterator(new_node);
+		}
+		if (val > _root->maximum()->data)
+		{
+			curr = _root->maximum();
+			curr->right = new_node;
+			new_node->parent = curr;
+			++_size;
+			return iterator(new_node);
+		}
+		while (val > curr->data)
+		{
+			curr = curr->next();
+		}
+		++_size;
+		if (curr->left == nullptr)
+		{
+			curr->left = new_node;
+			new_node->parent = curr;
+			return iterator(new_node);
+		}
+		else
+		{
+			curr = curr->left->maximum();
+			curr->right = new_node;
+			new_node->parent = curr;
+		
+			return iterator(new_node);
+			
+		}
+	}
+	iterator erase(iterator it)
+	{
+		--_size;
+		Node* curr = _root->minimum();
+		auto iter = begin();
+		while (iter++ != it)
+		{
+			curr = curr->next();
+		}
+		if (curr == _root)
+		{
+			if (_root->right == nullptr)
+			{
+				_root->left->parent = nullptr;
+				_root = _root->left;
+				return iterator(_root);
+			}
+			if (_root->left == nullptr)
+			{
+				_root->right->parent = nullptr;
+				_root = _root->right;
+				return iterator(_root);
+			}
+			Node* connect = _root->right->minimum();
+			connect->left = _root->left;
+			_root->left->parent = connect;
+			_root = _root->right;
+			return iterator(_root);
+		}
+		if (it == begin())
+		{
+			Node* curr = _root->minimum();
+			curr->parent->left = nullptr;
+			curr->parent = nullptr;
+			return begin();
+		}
+		if (it == end())
+		{
+			Node* curr = _root->maximum();
+			curr->parent->right = nullptr;
+			curr->parent = nullptr;
+			return end();
+		}
+		
+		if (curr->left == nullptr && curr->right == nullptr)
+		{
+			curr->parent->right == curr ? curr->parent->right = nullptr : curr->parent->left = nullptr;
+			curr->parent = nullptr;
+			return iterator(curr);
+		}
+		if (curr->left == nullptr && curr->right != nullptr)
+		{
+			Node* connect = curr->parent;
+			curr->right->parent = connect;
+			connect->right == curr ? connect->right = curr->right : connect->left = curr->right ;
+			return iterator(connect);
+		}
+		if (curr->left != nullptr && curr->right == nullptr)
+		{
+			Node* connect = curr->parent;
+			curr->left->parent = connect;
+			connect->left == curr ? connect->left = curr->left : connect->right = curr->left;
+			return iterator(connect);
+		}
+		Node* connect_l = curr->left;
+		Node* connect_r = curr->right;
+		Node* conn_r_min = connect_r->minimum();
+		conn_r_min->left = connect_l;
+		connect_l->parent = conn_r_min;
+		if (curr->parent->right == curr)
+		{
+			curr->parent->right = connect_r;
+			connect_r->parent = curr->parent;
+			return iterator(connect_r);
+		}
+		else
+		{
+			curr->parent->left = connect_r;
+			connect_r->parent = curr->parent;
+			return iterator(connect_r);
+		}
+	}
+	iterator erase(iterator beg, iterator en)
+	{
+		std::vector<Node*> toDelete;
+		for (auto it = beg; it != en; ++it)
+		{
+			toDelete.push_back(it._curr);
+		}
+		toDelete.push_back(en._curr);
+		for (auto f = toDelete.begin(); f != toDelete.end(); ++f)
+		{
+			erase(iterator(*f));
+		}
+		return end();
+	}
+};
